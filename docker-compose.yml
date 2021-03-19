@@ -1,0 +1,70 @@
+version: '3'
+services:
+  rs_intial:
+    image: $INTIALIZE_IMAGE:$TAG
+    entrypoint: [ "/scripts/setup.sh" ] 
+  #  entrypoint: sh -c "sleep 1000"
+    environment:
+      - PRIMARY_NODE=mongo_pri
+      - SECOUNDARY_NODE1=mongo_sec1
+      - SECOUNDARY_NODE2=mongo_sec2
+      - MONGO_INITDB_ROOT_USERNAME=testuser
+      - MONGO_INITDB_ROOT_PASSWORD=testpass
+    volumes:
+      - ./scripts:/scripts
+
+  mongo_pri:
+    image: $MONGO-ENTERPRISE:$TAG
+    command: "--keyFile /data/configdb/replkey --replSet rs --enableEncryption --encryptionKeyFile /data/configdb/encryptionkey"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=testuser
+      - MONGO_INITDB_ROOT_PASSWORD=testpass
+      - MONGODB_USER=testdbuser 
+      - MONGODB_PASSWORD=testdbpass
+      - DB_NAME=testdb
+      - REPLICATION_ENABLED=true
+      - MONGODB_REPLICA_SET_MODE=primary
+      - PRIMARY_NODE=mongo_pri
+      - REPLICATION_KEY="$BASE64"
+      - ENCRYPTION_KEY="$BASE64"
+      - SECOUNDARY_NODE1=mongo_sec1
+      - SECOUNDARY_NODE2=mongo_sec2
+    volumes:
+      - ./dbpri:/data/db
+      - ./pri-config:/data/configdb
+
+
+  mongo_sec1:
+    image: $MONGO-ENTERPRISE:$TAG
+    command: "--keyFile /data/configdb/replkey --replSet rs --enableEncryption --encryptionKeyFile /data/configdb/encryptionkey"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=testuser
+      - MONGO_INITDB_ROOT_PASSWORD=testpass
+      - MONGODB_USER=testdbuser
+      - MONGODB_PASSWORD=testdbpass
+      - DB_NAME=testdb
+      - REPLICATION_ENABLED=true
+      - MONGODB_REPLICA_SET_MODE=secondary
+      - REPLICATION_KEY="$BASE64"
+      - ENCRYPTION_KEY="$BASE64"
+    volumes:
+      - ./dbsec1:/data/db
+      - ./sec-config:/data/configdb
+
+
+  mongo_sec2:
+    image: $MONGO-ENTERPRISE:$TAG
+    command: "--keyFile /data/configdb/replkey --replSet rs --enableEncryption --encryptionKeyFile /data/configdb/encryptionkey"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=testuser
+      - MONGO_INITDB_ROOT_PASSWORD=testpass
+      - MONGODB_USER=testdbuser
+      - MONGODB_PASSWORD=testdbpass
+      - DB_NAME=testdb
+      - REPLICATION_ENABLED=true
+      - MONGODB_REPLICA_SET_MODE=secoundary
+      - REPLICATION_KEY="$BASE64"
+      - ENCRYPTION_KEY="$BASE64"
+    volumes:
+      - ./arbiter:/data/db
+      - ./arbiter-config:/data/configdb
